@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+const (
+	duration = reflect.Kind(100)
+)
+
 var (
 	ErrNotSet        = errors.New("variable not set but required")
 	ErrCanNotConvert = errors.New("can not convert")
@@ -32,11 +36,11 @@ func ReadEnvironment(fields []ParsedField) (map[string]interface{}, error) {
 }
 
 func convertToBasicType(value string, t reflect.Type, e reflect.Type) (interface{}, error) {
-	duration := reflect.Kind(100)
 	kind := t.Kind()
 	if t.PkgPath() == "time" && t.Name() == "Duration" {
 		kind = duration
 	}
+
 	switch kind {
 	case reflect.String:
 		return value, nil
