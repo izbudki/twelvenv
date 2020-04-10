@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -31,7 +32,12 @@ func ReadEnvironment(fields []ParsedField) (map[string]interface{}, error) {
 }
 
 func convertToBasicType(value string, t reflect.Type, e reflect.Type) (interface{}, error) {
-	switch t.Kind() {
+	duration := reflect.Kind(100)
+	kind := t.Kind()
+	if t.PkgPath() == "time" && t.Name() == "Duration" {
+		kind = duration
+	}
+	switch kind {
 	case reflect.String:
 		return value, nil
 	case reflect.Int:
@@ -73,6 +79,12 @@ func convertToBasicType(value string, t reflect.Type, e reflect.Type) (interface
 			converted = reflect.Append(converted, reflect.ValueOf(elem))
 		}
 		return converted.Interface(), nil
+	case duration:
+		converted, err := time.ParseDuration(value)
+		if err != nil {
+			return nil, fmt.Errorf("string %s to %s: %w", value, t, err)
+		}
+		return converted, nil
 	default:
 		return nil, fmt.Errorf("string %q to %s: %w", value, t, ErrCanNotConvert)
 	}

@@ -24,14 +24,14 @@ func TestParseFields(t *testing.T) {
 		{
 			name: "Struct value with all tags",
 			args: args{s: struct {
-				Foo   string   `name:"FOO_ENV"`
-				Bar   string   `name:"BAR_ENV" required:"true"`
-				Slice []string `name:"SLICE_ENV" required:"true"`
+				Foo bool     `name:"FOO_ENV"`
+				Bar int      `name:"BAR_ENV" required:"true"`
+				Baz []string `name:"BAZ_ENV" required:"true"`
 			}{}},
 			want: []ParsedField{
-				{EnvName: "FOO_ENV", EnvRequired: false, FieldName: "Foo", FieldType: reflect.TypeOf("Foo")},
-				{EnvName: "BAR_ENV", EnvRequired: true, FieldName: "Bar", FieldType: reflect.TypeOf("Bar")},
-				{EnvName: "SLICE_ENV", EnvRequired: true, FieldName: "Slice", FieldType: reflect.TypeOf([]string{"Foo"}), ElemType: reflect.TypeOf("Foo")},
+				{EnvName: "FOO_ENV", EnvRequired: false, FieldName: "Foo", FieldType: reflect.TypeOf(false)},
+				{EnvName: "BAR_ENV", EnvRequired: true, FieldName: "Bar", FieldType: reflect.TypeOf(0)},
+				{EnvName: "BAZ_ENV", EnvRequired: true, FieldName: "Baz", FieldType: reflect.TypeOf([]string{""}), ElemType: reflect.TypeOf("")},
 			},
 		},
 	}
@@ -50,8 +50,9 @@ func TestParseFields(t *testing.T) {
 }
 
 type testStruct struct {
-	Foo string
-	Bar string
+	Foo bool
+	Bar int
+	Baz []string
 }
 
 func TestSetValues(t *testing.T) {
@@ -66,11 +67,11 @@ func TestSetValues(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "1",
-			args: args{s: testStruct{}, values: map[string]interface{}{"Foo": "FOO_VALUE", "Bar": "BAR_VALUE"}},
+			name: "Valid values",
+			args: args{s: testStruct{}, values: map[string]interface{}{"Foo": true, "Bar": 5}},
 			want: testStruct{
-				Foo: "FOO_VALUE",
-				Bar: "BAR_VALUE",
+				Foo: true,
+				Bar: 5,
 			},
 		},
 	}
