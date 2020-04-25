@@ -17,40 +17,54 @@ var (
 )
 
 type ParsedField struct {
-	FieldName   string
+	FieldIndex  []int
 	FieldType   reflect.Type
 	ElemType    reflect.Type
 	EnvName     string
 	EnvRequired bool
 }
 
-func ParseFields(s interface{}) ([]ParsedField, error) {
-	t := reflect.TypeOf(s)
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
+func ParseFields(s interface{}, nestedIndex []int) ([]ParsedField, error) {
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
-	if t.Kind() != reflect.Struct {
+	if v.Kind() != reflect.Struct {
 		return nil, ErrIsNotStruct
 	}
 
-	n := t.NumField()
-	fields := make([]ParsedField, n)
+	n := v.NumField()
+	fields := make([]ParsedField, 0, n)
 	for i := 0; i < n; i++ {
-		fields[i].FieldName = t.Field(i).Name
-		fields[i].FieldType = t.Field(i).Type
-		if fields[i].FieldType.Kind() == reflect.Slice {
-			fields[i].ElemType = t.Field(i).Type.Elem()
+		if v.Field(i).Kind() == reflect.Struct {
+			ff, err := ParseFields(v.Field(i).Interface(), append(nestedIndex, i))
+			if err != nil {
+				return nil, err
+			}
+			fields = append(fields, ff...)
+			continue
 		}
 
-		fields[i].EnvName, _ = t.Field(i).Tag.Lookup(envName)
-		required, _ := t.Field(i).Tag.Lookup(envRequired)
-		fields[i].EnvRequired, _ = strconv.ParseBool(required)
+		structField := v.Type().Field(i)
+
+		var field ParsedField
+		field.FieldType = structField.Type
+		if field.FieldType.Kind() == reflect.Slice {
+			field.ElemType = structField.Type.Elem()
+		}
+		field.FieldIndex = append(nestedIndex, i)
+
+		field.EnvName, _ = structField.Tag.Lookup(envName)
+		required, _ := structField.Tag.Lookup(envRequired)
+		field.EnvRequired, _ = strconv.ParseBool(required)
+
+		fields = append(fields, field)
 	}
 
 	return fields, nil
 }
 
-func SetValues(s interface{}, values map[string]interface{}) error {
+func SetValues(s interface{}, values []FieldValue) error {
 	t := reflect.TypeOf(s)
 	if t.Kind() != reflect.Ptr {
 		return ErrIsNotPointer
@@ -61,9 +75,9 @@ func SetValues(s interface{}, values map[string]interface{}) error {
 	}
 
 	v := reflect.ValueOf(s).Elem()
-	for name, value := range values {
-		if reflect.ValueOf(value).IsValid() {
-			v.FieldByName(name).Set(reflect.ValueOf(value))
+	for _, value := range values {
+		if reflect.ValueOf(value.Value).IsValid() {
+			v.FieldByIndex(value.StructIndex).Set(reflect.ValueOf(value.Value))
 		}
 	}
 
