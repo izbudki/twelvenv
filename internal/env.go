@@ -19,9 +19,14 @@ var (
 	ErrCanNotConvert = errors.New("can not convert")
 )
 
-func ReadEnvironment(fields []ParsedField) (map[string]interface{}, error) {
-	values := make(map[string]interface{}, len(fields))
-	for _, field := range fields {
+type FieldValue struct {
+	StructIndex []int
+	Value       interface{}
+}
+
+func ReadEnvironment(fields []ParsedField) ([]FieldValue, error) {
+	values := make([]FieldValue, len(fields))
+	for i, field := range fields {
 		value, ok := os.LookupEnv(field.EnvName)
 		if !ok && field.EnvRequired {
 			return nil, fmt.Errorf("lookup %s: %w", field.EnvName, ErrNotSet)
@@ -30,7 +35,7 @@ func ReadEnvironment(fields []ParsedField) (map[string]interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("convert %q variable value: %w", field.EnvName, err)
 		}
-		values[field.FieldName] = converted
+		values[i] = FieldValue{StructIndex: field.FieldIndex, Value: converted}
 	}
 	return values, nil
 }

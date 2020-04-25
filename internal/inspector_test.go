@@ -3,6 +3,7 @@ package internal
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestParseFields(t *testing.T) {
@@ -27,17 +28,21 @@ func TestParseFields(t *testing.T) {
 				Foo bool     `name:"FOO_ENV"`
 				Bar int      `name:"BAR_ENV" required:"true"`
 				Baz []string `name:"BAZ_ENV" required:"true"`
+				Xyz struct {
+					Nested string `name:"NESTED_ENV"`
+				}
 			}{}},
 			want: []ParsedField{
-				{EnvName: "FOO_ENV", EnvRequired: false, FieldName: "Foo", FieldType: reflect.TypeOf(false)},
-				{EnvName: "BAR_ENV", EnvRequired: true, FieldName: "Bar", FieldType: reflect.TypeOf(0)},
-				{EnvName: "BAZ_ENV", EnvRequired: true, FieldName: "Baz", FieldType: reflect.TypeOf([]string{""}), ElemType: reflect.TypeOf("")},
+				{EnvName: "FOO_ENV", EnvRequired: false, FieldIndex: []int{0}, FieldType: reflect.TypeOf(false)},
+				{EnvName: "BAR_ENV", EnvRequired: true, FieldIndex: []int{1}, FieldType: reflect.TypeOf(0)},
+				{EnvName: "BAZ_ENV", EnvRequired: true, FieldIndex: []int{2}, FieldType: reflect.TypeOf([]string{""}), ElemType: reflect.TypeOf("")},
+				{EnvName: "NESTED_ENV", EnvRequired: false, FieldIndex: []int{3, 0}, FieldType: reflect.TypeOf("")},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseFields(tt.args.s)
+			got, err := ParseFields(tt.args.s, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseFields() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -53,12 +58,15 @@ type testStruct struct {
 	Foo bool
 	Bar int
 	Baz []string
+	Xyz struct {
+		Nested time.Duration
+	}
 }
 
 func TestSetValues(t *testing.T) {
 	type args struct {
 		s      testStruct
-		values map[string]interface{}
+		values []FieldValue
 	}
 	tests := []struct {
 		name    string
@@ -68,10 +76,22 @@ func TestSetValues(t *testing.T) {
 	}{
 		{
 			name: "Valid values",
-			args: args{s: testStruct{}, values: map[string]interface{}{"Foo": true, "Bar": 5}},
+			args: args{
+				s: testStruct{},
+				values: []FieldValue{
+					{StructIndex: []int{0}, Value: true},
+					{StructIndex: []int{1}, Value: 5},
+					{StructIndex: []int{2}, Value: []string{"a", "b", "c"}},
+					{StructIndex: []int{3, 0}, Value: 15 * time.Second},
+				},
+			},
 			want: testStruct{
 				Foo: true,
 				Bar: 5,
+				Baz: []string{"a", "b", "c"},
+				Xyz: struct {
+					Nested time.Duration
+				}{15 * time.Second},
 			},
 		},
 	}

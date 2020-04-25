@@ -16,7 +16,7 @@ func TestReadEnvironment(t *testing.T) {
 		name    string
 		envs    map[string]string
 		args    args
-		want    map[string]interface{}
+		want    []FieldValue
 		wantErr bool
 	}{
 		{
@@ -25,36 +25,46 @@ func TestReadEnvironment(t *testing.T) {
 				"BOOL_ENV": "true", "SLICE_ENV": "a,b,c", "DURATION_ENV": "1h15m11s"},
 			args: args{
 				fields: []ParsedField{
-					{EnvName: "STRING_ENV", EnvRequired: true, FieldName: "String", FieldType: reflect.TypeOf("")},
-					{EnvName: "INT_ENV", EnvRequired: true, FieldName: "Int", FieldType: reflect.TypeOf(0)},
-					{EnvName: "UINT_ENV", EnvRequired: true, FieldName: "Uint", FieldType: reflect.TypeOf(uint(0))},
-					{EnvName: "FLOAT_ENV", EnvRequired: true, FieldName: "Float", FieldType: reflect.TypeOf(0.00)},
-					{EnvName: "BOOL_ENV", EnvRequired: true, FieldName: "Bool", FieldType: reflect.TypeOf(true)},
-					{EnvName: "SLICE_ENV", EnvRequired: true, FieldName: "Slice", FieldType: reflect.TypeOf([]string{""}), ElemType: reflect.TypeOf("")},
-					{EnvName: "DURATION_ENV", EnvRequired: true, FieldName: "Duration", FieldType: reflect.TypeOf(time.Duration(0))},
+					{EnvName: "STRING_ENV", EnvRequired: true, FieldIndex: []int{0}, FieldType: reflect.TypeOf("")},
+					{EnvName: "INT_ENV", EnvRequired: true, FieldIndex: []int{1}, FieldType: reflect.TypeOf(0)},
+					{EnvName: "UINT_ENV", EnvRequired: true, FieldIndex: []int{2}, FieldType: reflect.TypeOf(uint(0))},
+					{EnvName: "FLOAT_ENV", EnvRequired: true, FieldIndex: []int{3}, FieldType: reflect.TypeOf(0.00)},
+					{EnvName: "BOOL_ENV", EnvRequired: true, FieldIndex: []int{4}, FieldType: reflect.TypeOf(true)},
+					{EnvName: "SLICE_ENV", EnvRequired: true, FieldIndex: []int{5}, FieldType: reflect.TypeOf([]string{""}), ElemType: reflect.TypeOf("")},
+					{EnvName: "DURATION_ENV", EnvRequired: true, FieldIndex: []int{6}, FieldType: reflect.TypeOf(time.Duration(0))},
 				},
 			},
-			want: map[string]interface{}{"String": "foo", "Int": -5, "Uint": uint(5), "Float": 1.23,
-				"Bool": true, "Slice": []string{"a", "b", "c"}, "Duration": time.Hour + 15*time.Minute + 11*time.Second},
+			want: []FieldValue{
+				{StructIndex: []int{0}, Value: "foo"},
+				{StructIndex: []int{1}, Value: -5},
+				{StructIndex: []int{2}, Value: uint(5)},
+				{StructIndex: []int{3}, Value: 1.23},
+				{StructIndex: []int{4}, Value: true},
+				{StructIndex: []int{5}, Value: []string{"a", "b", "c"}},
+				{StructIndex: []int{6}, Value: time.Hour + 15*time.Minute + 11*time.Second},
+			},
 		},
 		{
 			name: "With unset not required vars",
 			envs: map[string]string{"FOO_ENV": "foo"},
 			args: args{
 				fields: []ParsedField{
-					{EnvName: "FOO_ENV", EnvRequired: true, FieldName: "Foo", FieldType: reflect.TypeOf("")},
-					{EnvName: "BAR_ENV", EnvRequired: false, FieldName: "Bar", FieldType: reflect.TypeOf("")},
+					{EnvName: "FOO_ENV", EnvRequired: true, FieldIndex: []int{0}, FieldType: reflect.TypeOf("")},
+					{EnvName: "BAR_ENV", EnvRequired: false, FieldIndex: []int{1}, FieldType: reflect.TypeOf("")},
 				},
 			},
-			want: map[string]interface{}{"Foo": "foo", "Bar": ""},
+			want: []FieldValue{
+				{StructIndex: []int{0}, Value: "foo"},
+				{StructIndex: []int{1}, Value: ""},
+			},
 		},
 		{
 			name: "With unset required vars",
 			envs: map[string]string{"FOO_ENV": "foo"},
 			args: args{
 				fields: []ParsedField{
-					{EnvName: "FOO_ENV", EnvRequired: true, FieldName: "Foo", FieldType: reflect.TypeOf("")},
-					{EnvName: "BAR_ENV", EnvRequired: true, FieldName: "Bar", FieldType: reflect.TypeOf("")},
+					{EnvName: "FOO_ENV", EnvRequired: true, FieldIndex: []int{0}, FieldType: reflect.TypeOf("")},
+					{EnvName: "BAR_ENV", EnvRequired: true, FieldIndex: []int{1}, FieldType: reflect.TypeOf("")},
 				},
 			},
 			wantErr: true,
@@ -64,8 +74,8 @@ func TestReadEnvironment(t *testing.T) {
 			envs: map[string]string{"FOO_ENV": "foo", "BAR_ENV": "bar"},
 			args: args{
 				fields: []ParsedField{
-					{EnvName: "FOO_ENV", EnvRequired: true, FieldName: "Foo", FieldType: reflect.TypeOf("")},
-					{EnvName: "BAR_ENV", EnvRequired: true, FieldName: "Bar", FieldType: reflect.TypeOf(5)},
+					{EnvName: "FOO_ENV", EnvRequired: true, FieldIndex: []int{0}, FieldType: reflect.TypeOf("")},
+					{EnvName: "BAR_ENV", EnvRequired: true, FieldIndex: []int{1}, FieldType: reflect.TypeOf(5)},
 				},
 			},
 			wantErr: true,
@@ -75,8 +85,8 @@ func TestReadEnvironment(t *testing.T) {
 			envs: map[string]string{"FOO_ENV": "foo", "BAR_ENV": "bar:1"},
 			args: args{
 				fields: []ParsedField{
-					{EnvName: "FOO_ENV", EnvRequired: true, FieldName: "Foo", FieldType: reflect.TypeOf("")},
-					{EnvName: "BAR_ENV", EnvRequired: true, FieldName: "Bar", FieldType: reflect.TypeOf(map[string]int{})},
+					{EnvName: "FOO_ENV", EnvRequired: true, FieldIndex: []int{0}, FieldType: reflect.TypeOf("")},
+					{EnvName: "BAR_ENV", EnvRequired: true, FieldIndex: []int{1}, FieldType: reflect.TypeOf(map[string]int{})},
 				},
 			},
 			wantErr: true,
