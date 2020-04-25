@@ -24,7 +24,31 @@ type ParsedField struct {
 	EnvRequired bool
 }
 
-func ParseFields(s interface{}, nestedIndex []int) ([]ParsedField, error) {
+func ParseFields(s interface{}) ([]ParsedField, error) {
+	return parseFieldsHelper(s, nil)
+}
+
+func SetValues(s interface{}, values []FieldValue) error {
+	t := reflect.TypeOf(s)
+	if t.Kind() != reflect.Ptr {
+		return ErrIsNotPointer
+	}
+	t = t.Elem()
+	if t.Kind() != reflect.Struct {
+		return ErrIsNotStruct
+	}
+
+	v := reflect.ValueOf(s).Elem()
+	for _, value := range values {
+		if reflect.ValueOf(value.Value).IsValid() {
+			v.FieldByIndex(value.StructIndex).Set(reflect.ValueOf(value.Value))
+		}
+	}
+
+	return nil
+}
+
+func parseFieldsHelper(s interface{}, nestedIndex []int) ([]ParsedField, error) {
 	v := reflect.ValueOf(s)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -37,7 +61,7 @@ func ParseFields(s interface{}, nestedIndex []int) ([]ParsedField, error) {
 	fields := make([]ParsedField, 0, n)
 	for i := 0; i < n; i++ {
 		if v.Field(i).Kind() == reflect.Struct {
-			ff, err := ParseFields(v.Field(i).Interface(), append(nestedIndex, i))
+			ff, err := parseFieldsHelper(v.Field(i).Interface(), append(nestedIndex, i))
 			if err != nil {
 				return nil, err
 			}
@@ -62,24 +86,4 @@ func ParseFields(s interface{}, nestedIndex []int) ([]ParsedField, error) {
 	}
 
 	return fields, nil
-}
-
-func SetValues(s interface{}, values []FieldValue) error {
-	t := reflect.TypeOf(s)
-	if t.Kind() != reflect.Ptr {
-		return ErrIsNotPointer
-	}
-	t = t.Elem()
-	if t.Kind() != reflect.Struct {
-		return ErrIsNotStruct
-	}
-
-	v := reflect.ValueOf(s).Elem()
-	for _, value := range values {
-		if reflect.ValueOf(value.Value).IsValid() {
-			v.FieldByIndex(value.StructIndex).Set(reflect.ValueOf(value.Value))
-		}
-	}
-
-	return nil
 }
