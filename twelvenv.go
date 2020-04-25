@@ -2,7 +2,7 @@ package twelvenv
 
 import "github.com/izbudki/twelvenv/internal"
 
-func Unmarshal(s interface{}) error {
+func FromEnv(s interface{}) error {
 	fields, err := internal.ParseFields(s)
 	if err != nil {
 		return err
