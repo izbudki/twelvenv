@@ -18,19 +18,24 @@ import (
 	"github.com/izbudki/twelvenv"
 )
 
+type DBConfig struct {
+	Host string `name:"DB_HOST" required:"true"`
+	Port int    `name:"DB_PORT" required:"true"`
+}
+
 type Config struct {
-	Database struct {
-		Host string `name:"DB_HOST" required:"true"`
-		Port int    `name:"DB_PORT" required:"true"`
-	}
-	Addresses  []string      `name:"ADDRESSES" required:"true"`
-	Interval   time.Duration `name:"INTERVAL" required:"true"`
-	EnableLogs string        `name:"ENABLE_LOGS"`
+	FooDatabase DBConfig      `env_prefix:"FOO_"`
+	BarDatabase DBConfig      `env_prefix:"BAR_"`
+	Addresses   []string      `name:"ADDRESSES" required:"true"`
+	Interval    time.Duration `name:"INTERVAL" required:"true"`
+	EnableLogs  string        `name:"ENABLE_LOGS"`
 }
 
 func main() {
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_PORT", "5432")
+	os.Setenv("FOO_DB_HOST", "localhost")
+	os.Setenv("BAR_DB_HOST", "localhost")
+	os.Setenv("FOO_DB_PORT", "5432")
+	os.Setenv("BAR_DB_PORT", "5433")
 	os.Setenv("ENABLE_LOGS", "true")
 	os.Setenv("ADDRESSES", "localhost:8000,localhost:8001,localhost:8002")
 	os.Setenv("INTERVAL", "15s")
@@ -49,9 +54,13 @@ func main() {
 Result:
 ```
 {
-    "Database": {
+    "FooDatabase": {
         "Host": "localhost",
         "Port": 5432
+    },
+    "BarDatabase": {
+        "Host": "localhost",
+        "Port": 5433
     },
     "Addresses": [
         "localhost:8000",
@@ -65,5 +74,7 @@ Result:
 
 ## TODO
 
-- [ ] Prefixes for nested structs
+- [x] Prefixes for nested structs
 - [ ] Simple validation
+- [ ] Verbose error messages
+- [ ] Clever tags analysis
