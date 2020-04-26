@@ -31,12 +31,16 @@ func TestParseFields(t *testing.T) {
 				Xyz struct {
 					Nested string `name:"NESTED_ENV"`
 				}
+				Xyz2 struct {
+					Nested string `name:"NESTED_ENV"`
+				} `env_prefix:"2_"`
 			}{}},
 			want: []ParsedField{
 				{EnvName: "FOO_ENV", EnvRequired: false, FieldIndex: []int{0}, FieldType: reflect.TypeOf(false)},
 				{EnvName: "BAR_ENV", EnvRequired: true, FieldIndex: []int{1}, FieldType: reflect.TypeOf(0)},
 				{EnvName: "BAZ_ENV", EnvRequired: true, FieldIndex: []int{2}, FieldType: reflect.TypeOf([]string{""}), ElemType: reflect.TypeOf("")},
 				{EnvName: "NESTED_ENV", EnvRequired: false, FieldIndex: []int{3, 0}, FieldType: reflect.TypeOf("")},
+				{EnvName: "2_NESTED_ENV", EnvRequired: false, FieldIndex: []int{4, 0}, FieldType: reflect.TypeOf("")},
 			},
 		},
 	}

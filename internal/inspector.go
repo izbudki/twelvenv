@@ -9,6 +9,7 @@ import (
 const (
 	envName     = "name"
 	envRequired = "required"
+	envPrefix   = "env_prefix"
 )
 
 var (
@@ -25,7 +26,7 @@ type ParsedField struct {
 }
 
 func ParseFields(s interface{}) ([]ParsedField, error) {
-	return parseFieldsHelper(s, nil)
+	return parseFieldsHelper(s, nil, "")
 }
 
 func SetValues(s interface{}, values []FieldValue) error {
@@ -48,7 +49,7 @@ func SetValues(s interface{}, values []FieldValue) error {
 	return nil
 }
 
-func parseFieldsHelper(s interface{}, nestedIndex []int) ([]ParsedField, error) {
+func parseFieldsHelper(s interface{}, nestedIndex []int, prefix string) ([]ParsedField, error) {
 	v := reflect.ValueOf(s)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -60,16 +61,20 @@ func parseFieldsHelper(s interface{}, nestedIndex []int) ([]ParsedField, error) 
 	n := v.NumField()
 	fields := make([]ParsedField, 0, n)
 	for i := 0; i < n; i++ {
+		structField := v.Type().Field(i)
+
 		if v.Field(i).Kind() == reflect.Struct {
-			ff, err := parseFieldsHelper(v.Field(i).Interface(), append(nestedIndex, i))
+			ff, err := parseFieldsHelper(
+				v.Field(i).Interface(),
+				append(nestedIndex, i),
+				structField.Tag.Get(envPrefix),
+			)
 			if err != nil {
 				return nil, err
 			}
 			fields = append(fields, ff...)
 			continue
 		}
-
-		structField := v.Type().Field(i)
 
 		var field ParsedField
 		field.FieldType = structField.Type
@@ -79,6 +84,9 @@ func parseFieldsHelper(s interface{}, nestedIndex []int) ([]ParsedField, error) 
 		field.FieldIndex = append(nestedIndex, i)
 
 		field.EnvName, _ = structField.Tag.Lookup(envName)
+		if prefix != "" {
+			field.EnvName = prefix + field.EnvName
+		}
 		required, _ := structField.Tag.Lookup(envRequired)
 		field.EnvRequired, _ = strconv.ParseBool(required)
 
