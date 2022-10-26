@@ -1,3 +1,3 @@
-module github.com/izbudki/twelvenv
+module go.izbudki.dev/twelvenv
 
 go 1.14

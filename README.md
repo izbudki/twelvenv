@@ -15,7 +15,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/izbudki/twelvenv"
+	"go.izbudki.dev/twelvenv"
 )
 
 type DBConfig struct {

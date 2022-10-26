@@ -1,6 +1,6 @@
-package twelvenv
+package twelvenv // import "go.izbudki.dev/twelvenv"
 
-import "github.com/izbudki/twelvenv/internal"
+import "go.izbudki.dev/twelvenv/internal"
 
 func FromEnv(s interface{}) error {
 	fields, err := internal.ParseFields(s)
